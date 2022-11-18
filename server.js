@@ -27,6 +27,36 @@ function bundleClient() {
 /**
  * Setup a quick Web Socket server
  */
+
+function public init() {
+  // ...
+  this.wsClient.onmessage = (wsMsgEvent) => {
+    const allCoords: ICoords = JSON.parse(wsMsgEvent.data);
+    for (const playerId of Object.keys(allCoords)) {
+      if (playerId === this.id) {
+        // we don't need to update ourselves
+        continue;
+      }
+      const { x, y, frame } = allCoords[playerId];
+      if (playerId in this.players) {
+        // We have seen this player before, update it!
+        const player = this.players[playerId];
+        if (player.texture.key === "__MISSING") {
+          // Player was instantiated before texture was ready, reinstantiate
+          player.destroy();
+          this.players[playerId] = this.add.sprite(x, y, "player", frame);
+        } else {
+          player.setX(x);
+          player.setY(y);
+          player.setFrame(frame);  
+        }
+      } else {
+        // We have not seen this player before, create it!
+        this.players[playerId] = this.add.sprite(x, y, "player", frame);
+      }
+    }
+  }
+}
 function setupWSServer(server) {
   const wss = new WebSocketServer({
     server,
